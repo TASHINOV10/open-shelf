@@ -4,3 +4,4 @@ psycopg2-binary
 sqlalchemy
 pydantic
 python-multipart
+httpx==0.24.1
