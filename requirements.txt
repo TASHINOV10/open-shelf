@@ -5,3 +5,4 @@ sqlalchemy
 pydantic
 python-multipart
 httpx==0.24.1
+pydantic-settings
