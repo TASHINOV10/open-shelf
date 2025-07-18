@@ -2,7 +2,10 @@ from pydantic import BaseModel
 from datetime import date
 
 class PriceCreate(BaseModel):
-    product: str
-    store: str
+    grocery_name: str
+    category: str
+    brand: str
     price: float
-    date: date
+    currency: str
+    location: str
+    date: date 

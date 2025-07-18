@@ -5,7 +5,10 @@ class Price(Base):
     __tablename__ = "prices"
 
     id = Column(Integer, primary_key=True, index=True)
-    product = Column(String, index=True)
-    store = Column(String)
+    grocery_name =  Column(String, index=True)
+    category = Column(String)
+    brand = Column(String)
     price = Column(Float)
+    currency = Column(String)
+    location = Column(String)
     date = Column(Date)
