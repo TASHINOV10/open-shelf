@@ -4,6 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
 from .database import Base, engine
 from .routes import price
+from .routes import receipt  # assuming you named the file receipt.py
+
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -25,6 +27,8 @@ app.add_middleware(
 
 # Register API routes
 app.include_router(price.router)
+app.include_router(receipt.router)  # ✅ Add this line
+
 
 @app.get("/")
 async def root():
