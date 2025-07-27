@@ -30,3 +30,9 @@ Thumbs.db
 # === IDEs ===
 .vscode/
 .idea/
+
+# === OCR_DEV ===
+ocr_dev/billa/
+ocr_dev/fantastiko/
+ocr_dev/maks/
+ocr_dev/results/
