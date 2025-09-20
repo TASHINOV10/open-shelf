@@ -1,29 +1,56 @@
-# Open Shelf
+# Open-Shelf (WIP)
 
-This project provides a minimal full-stack application skeleton. The Python back end uses [FastAPI](https://fastapi.tiangolo.com/) and SQLAlchemy. A React front end lives in `client/` but is not yet implemented.
+**Open-Shelf** is a local-first prototype for crowdsourced grocery price transparency.  
+Users can upload receipt photos from their phones; a FastAPI backend receives the files (OCR/analysis coming soon).
 
-## Development Setup
+> ⚠️ **Status:** actively under development — features, routes, and UI may change.
 
-1. **Install dependencies**
+---
 
-   ```bash
-   pip install -r requirements.txt
+## What’s inside
+
+- `server/` — **FastAPI** backend (file upload endpoint + future OCR pipeline)
+- `client/` — **React** app (camera/upload flow)
+- `start_dev.bat` — one-click **Windows** launcher (starts both servers)
+
+---
+
+## Windows-only setup (reviewers)
+
+### Prerequisites
+- **Windows 10/11**
+- **Python 3.10+** (check “Add Python to PATH” during install)
+- **Node.js (LTS)** — provides `npm`
+- **Git** (to clone the repo)
+
+### Quick start (recommended)
+1. **Clone** the repo:
+   ```bat
+   git clone https://github.com/TASHINOV10/open-shelf
+   cd open-shelf
    ```
 
-2. **Run the server**
 
-   ```bash
-   uvicorn server.main:app --reload
-   ```
+2. **Double-click** start_dev.bat.
 
-   The API will be available at `http://localhost:8000/`.
+The launcher will:
 
-### Configuration
+- create a venv if missing,
+- install Python deps from requirements.txt,
+- run FastAPI on http://0.0.0.0:8000,
+- install client deps (if needed),
+- run React on http://localhost:3000 (bound for LAN testing).
+- Open the app at: http://localhost:3000
+- On first run, Windows Firewall may prompt for Python/Node — click Allow for Private networks.
 
-Environment variables can be placed in a `.env` file at the project root. The main setting is `DATABASE_URL`, which defaults to a local SQLite database (`sqlite:///./dev.db`).
+## Phone Testing
 
-### Running tests
+- On Windows: Settings → Network & Internet → Mobile hotspot
+- Turn hotspot On (share your internet connection).
 
-```bash
-PYTHONPATH=. pytest
-```
+From your phone (connected to the laptop’s hotspot), visit:
+
+-React: http://192.168.137.1:3000
+-FastAPI docs: http://192.168.137.1:8000/docs
+
+If blocked, allow Python and Node.js through Windows Firewall (Private).
