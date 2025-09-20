@@ -5,6 +5,7 @@ function CameraUpload() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [showUpload, setShowUpload] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -19,24 +20,31 @@ function CameraUpload() {
     if (!selectedFile) return;
 
     const formData = new FormData();
+    // ⚠️ The key "file" must match your FastAPI param name (e.g., file: UploadFile)
     formData.append("file", selectedFile);
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/upload-receipt", {
-        method: "POST",
-        body: formData
-      });
+      setUploading(true);
+
+      // ✅ IMPORTANT: use a RELATIVE path so CRA dev server proxies to FastAPI
+      // If your FastAPI route is different, change '/upload-receipt' accordingly
+
+      const res = await fetch("http://192.168.137.1:8000/upload-receipt", { method: "POST", body: formData });
+
 
       if (res.ok) {
         setUploadSuccess(true);
         setSelectedFile(null);
         setShowUpload(false);
       } else {
-        alert("Upload failed");
+        const text = await res.text().catch(() => "");
+        alert(`Upload failed (${res.status}). ${text}`);
       }
     } catch (err) {
       console.error("Upload error:", err);
-      alert("Upload error");
+      alert("Upload error. See console for details.");
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -61,15 +69,13 @@ function CameraUpload() {
       </label>
 
       {showUpload && (
-        <button className="upload-button" onClick={handleUpload}>
-          Upload
+        <button className="upload-button" onClick={handleUpload} disabled={uploading}>
+          {uploading ? "Uploading..." : "Upload"}
         </button>
       )}
 
       {uploadSuccess && (
-        <div className="success-banner">
-          ✅ Receipt uploaded successfully!
-        </div>
+        <div className="success-banner">✅ Receipt uploaded successfully!</div>
       )}
     </div>
   );
