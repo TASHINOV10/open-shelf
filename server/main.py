@@ -18,7 +18,9 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
-        "http://127.0.0.1:3000"
+        "http://127.0.0.1:3000",
+        "http://192.168.137.1:3000",  # laptop hotspot origin
+        "http://10.212.89.14:3000"   # USB-tether origin (just in case)
     ],
     allow_credentials=True,
     allow_methods=["*"],
