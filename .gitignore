@@ -36,4 +36,9 @@ ocr_dev/billa/
 ocr_dev/fantastiko/
 ocr_dev/maks/
 ocr_dev/results/
+
+# === Uploaded Receipts ===
 uploaded_receipts/
+
+# === Server Config ===
+server/config.py
