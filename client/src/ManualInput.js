@@ -1,63 +1,115 @@
+// src/ManualInput.js
 import React, { useState } from "react";
-import "./App.css";
+import { API_BASE } from "./apiConfig";
 
 function ManualInput() {
   const [formData, setFormData] = useState({
-    grocery_name: "",
-    category: "",
-    brand: "",
-    price: "",
-    currency: "",
-    location: "",
-    date: ""
+    store_name: "",
+    product_name: "",
+    unit_price: "",
   });
 
+  const [status, setStatus] = useState(null); // "success" | "error" | null
+  const [errorMessage, setErrorMessage] = useState("");
+
   const handleChange = (e) => {
+    const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [name]: value,
     }));
+    setStatus(null);
+    setErrorMessage("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Submitting form:", formData);
+    setStatus(null);
+    setErrorMessage("");
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/prices", {
+      const response = await fetch(`${API_BASE}/prices`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(formData),
       });
 
-      const result = await response.json();
-      console.log("Server responded:", result);
-
-      if (response.ok) {
-        alert("Success!");
-      } else {
-        alert("Error: " + JSON.stringify(result));
+      if (!response.ok) {
+        let detail = "";
+        try {
+          const data = await response.json();
+          detail = data.detail || JSON.stringify(data);
+        } catch {
+          detail = await response.text();
+        }
+        throw new Error(
+          `Грешка при записване на цената: ${response.status} ${detail}`
+        );
       }
+
+      // const data = await response.json(); // use if needed
+
+      setStatus("success");
+      setFormData({
+        store_name: "",
+        product_name: "",
+        unit_price: "",
+      });
     } catch (err) {
-      console.error("Failed to submit", err);
-      alert("Submission failed");
+      console.error(err);
+      setStatus("error");
+      setErrorMessage(err.message || "Възникна неочаквана грешка.");
     }
   };
 
   return (
     <div className="form-container">
-      <h2>Enter Price Manually</h2>
       <form className="manual-form" onSubmit={handleSubmit}>
-        <input name="grocery_name" placeholder="Grocery Store Name" onChange={handleChange} />
-        <input name="category" placeholder="Category" onChange={handleChange} />
-        <input name="brand" placeholder="Brand" onChange={handleChange} />
-        <input name="price" type="number" placeholder="Price" onChange={handleChange} />
-        <input name="currency" placeholder="Currency" onChange={handleChange} />
-        <input name="location" placeholder="Location (City)" onChange={handleChange} />
-        <input name="date" type="date" placeholder="Date" onChange={handleChange} />
-        <button type="submit">Submit</button>
+        <h2 style={{ marginTop: 0, marginBottom: "1rem" }}>Ръчно въвеждане</h2>
+
+        <input
+          type="text"
+          name="store_name"
+          placeholder="Име на магазин"
+          value={formData.store_name}
+          onChange={handleChange}
+          required
+        />
+
+        <input
+          type="text"
+          name="product_name"
+          placeholder="Продукт"
+          value={formData.product_name}
+          onChange={handleChange}
+          required
+        />
+
+        <input
+          type="number"
+          name="unit_price"
+          placeholder="Единична цена"
+          value={formData.unit_price}
+          onChange={handleChange}
+          step="0.01"
+          min="0"
+          required
+        />
+
+        <button type="submit">Запиши цена</button>
+
+        {status === "success" && (
+          <p style={{ marginTop: "1rem", color: "#a3ffb0" }}>
+            Цената е записана успешно!
+          </p>
+        )}
+        {status === "error" && (
+          <p style={{ marginTop: "1rem", color: "#ffb3b3" }}>
+            {errorMessage || "Възникна грешка при записването."}
+          </p>
+        )}
       </form>
     </div>
   );

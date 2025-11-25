@@ -1,131 +1,134 @@
-import React, { useState, useEffect } from "react";
-import "./App.css";
+// src/CameraUpload.js
+import React, { useState } from "react";
+import { API_BASE } from "./apiConfig";
 
-export default function CameraUpload() {
+function CameraUpload() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    // create / revoke preview URL
-    if (!selectedFile) {
-      setPreviewUrl(null);
+  const handleFileChange = (event) => {
+    const file = event.target.files && event.target.files[0];
+    if (!file) {
       return;
     }
-    const url = URL.createObjectURL(selectedFile);
-    setPreviewUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [selectedFile]);
 
-  function handleFileChange(e) {
+    setSelectedFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
     setUploadSuccess(false);
     setError(null);
-    const f = e.target.files && e.target.files[0];
-    if (!f) {
-      setSelectedFile(null);
-      return;
-    }
-    setSelectedFile(f);
-  }
+  };
 
-  async function handleUpload() {
-    setError(null);
-    setUploadSuccess(false);
-
+  const handleUpload = async () => {
     if (!selectedFile) {
-      setError("No file selected");
+      setError("Моля, първо изберете снимка на касова бележка.");
       return;
     }
 
-    const formData = new FormData();
-    // MUST match backend field name: "file"
-    formData.append("file", selectedFile, selectedFile.name);
+    setUploading(true);
+    setUploadSuccess(false);
+    setError(null);
 
     try {
-      setUploading(true);
+      const formData = new FormData();
+      formData.append("file", selectedFile);
 
-      const res = await fetch("/upload-receipt", {
+      const response = await fetch(`${API_BASE}/upload-receipt`, {
         method: "POST",
         body: formData,
-        // Do NOT set Content-Type header; browser will set multipart boundary.
       });
 
-      if (!res.ok) {
-        const text = await res.text().catch(() => res.statusText || "");
-        throw new Error(`Upload failed: ${res.status} ${text}`);
+      if (!response.ok) {
+        let detail = "";
+        try {
+          const data = await response.json();
+          detail = data.detail || JSON.stringify(data);
+        } catch {
+          detail = await response.text();
+        }
+        throw new Error(
+          `Грешка при качване на бележката: ${response.status} ${detail}`
+        );
       }
 
-      // backend returns JSON on success; ignore parse errors
-      const json = await res.json().catch(() => ({}));
-      console.log("Upload response:", json);
+      // If backend returns JSON, you can parse/use it:
+      // const data = await response.json();
 
       setUploadSuccess(true);
-      setSelectedFile(null);
     } catch (err) {
-      console.error("Upload error:", err);
-      setError(err.message || "Upload failed");
+      console.error(err);
+      setError(err.message || "Възникна неочаквана грешка при качването.");
     } finally {
       setUploading(false);
     }
-  }
-
-  function handleClear() {
-    setSelectedFile(null);
-    setPreviewUrl(null);
-    setError(null);
-    setUploadSuccess(false);
-  }
+  };
 
   return (
-    <div style={{ maxWidth: 420, margin: "0 auto", fontFamily: "sans-serif" }}>
-      <h3>Upload Receipt</h3>
+    <div className="camera-upload-container">
+      <h1 className="page-title">Качи касова бележка</h1>
 
-      <input
-        type="file"
-        accept="image/*"
-        onChange={handleFileChange}
-        disabled={uploading}
-      />
+      <div className="privacy-banner">
+        Използваме снимката само за да извлечем цените на продуктите. Не
+        съхраняваме лични данни и не споделяме изображението с трети страни.
+      </div>
+
+      <label className="file-select-label">
+        Избери снимка
+        <input
+          className="file-input"
+          type="file"
+          accept="image/*"
+          onChange={handleFileChange}
+          disabled={uploading}
+        />
+      </label>
 
       {previewUrl && (
-        <div style={{ marginTop: 12 }}>
+        <div style={{ marginTop: "1rem", width: "100%" }}>
           <img
             src={previewUrl}
-            alt="preview"
-            style={{ width: "100%", maxHeight: 300, objectFit: "contain", border: "1px solid #ddd", borderRadius: 4 }}
+            alt="Преглед на касовата бележка"
+            style={{
+              width: "100%",
+              maxHeight: 320,
+              objectFit: "contain",
+              borderRadius: 6,
+            }}
           />
         </div>
       )}
 
-      <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
-        <button
-          onClick={handleUpload}
-          disabled={uploading || !selectedFile}
-          style={{ padding: "8px 12px", cursor: uploading || !selectedFile ? "not-allowed" : "pointer" }}
-        >
-          {uploading ? "Uploading..." : "Upload"}
-        </button>
-
-        <button
-          onClick={handleClear}
-          disabled={uploading && !selectedFile}
-          style={{ padding: "8px 12px" }}
-        >
-          Clear
-        </button>
-      </div>
+      <button
+        className="upload-button"
+        onClick={handleUpload}
+        disabled={uploading || !selectedFile}
+      >
+        {uploading ? "Качване..." : "Качи бележката"}
+      </button>
 
       {uploadSuccess && (
-        <div style={{ marginTop: 12, color: "green" }}>Upload successful.</div>
+        <div className="success-banner">
+          Success!
+        </div>
       )}
 
       {error && (
-        <div style={{ marginTop: 12, color: "crimson", whiteSpace: "pre-wrap" }}>
+        <div
+          style={{
+            marginTop: "1rem",
+            color: "crimson",
+            whiteSpace: "pre-wrap",
+            textAlign: "left",
+            width: "100%",
+          }}
+        >
           {error}
         </div>
       )}
     </div>
   );
 }
+
+export default CameraUpload;
