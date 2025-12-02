@@ -39,6 +39,3 @@ ocr_dev/results/
 
 # === Uploaded Receipts ===
 uploaded_receipts/
-
-# === Server Config ===
-server/config.py
