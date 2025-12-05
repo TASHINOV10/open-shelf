@@ -3,6 +3,13 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .database.database import Base, engine
+
+
+from .models.categories import Categories
+from .models.groceryItems import GroceryItems
+from .models.receipts import Receipts
+from .models.stores import Stores
+
 from .routes import groceryItems
 from .routes import receipts
 
