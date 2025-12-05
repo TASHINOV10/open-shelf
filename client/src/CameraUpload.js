@@ -9,16 +9,39 @@ function CameraUpload() {
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [error, setError] = useState(null);
 
+  const [parsedReceipt, setParsedReceipt] = useState(null);
+  const [editedReceipt, setEditedReceipt] = useState(null);
+
+  // Per-field edit state for meta data
+  const [editingMeta, setEditingMeta] = useState({
+    storeName: false,
+    storeLocation: false,
+    postDate: false,
+  });
+
+  // Which item row is currently in edit mode (null => none)
+  const [editingItemIndex, setEditingItemIndex] = useState(null);
+
+  const [confirmMessage, setConfirmMessage] = useState(null);
+
   const handleFileChange = (event) => {
     const file = event.target.files && event.target.files[0];
-    if (!file) {
-      return;
-    }
+    if (!file) return;
 
     setSelectedFile(file);
     setPreviewUrl(URL.createObjectURL(file));
     setUploadSuccess(false);
     setError(null);
+
+    setParsedReceipt(null);
+    setEditedReceipt(null);
+    setEditingMeta({
+      storeName: false,
+      storeLocation: false,
+      postDate: false,
+    });
+    setEditingItemIndex(null);
+    setConfirmMessage(null);
   };
 
   const handleUpload = async () => {
@@ -30,6 +53,7 @@ function CameraUpload() {
     setUploading(true);
     setUploadSuccess(false);
     setError(null);
+    setConfirmMessage(null);
 
     try {
       const formData = new FormData();
@@ -53,8 +77,12 @@ function CameraUpload() {
         );
       }
 
-      // If backend returns JSON, you can parse/use it:
-      // const data = await response.json();
+      const data = await response.json();
+      const parsed = data.parsed_receipt || null;
+
+      setParsedReceipt(parsed);
+      const cloned = parsed ? JSON.parse(JSON.stringify(parsed)) : null;
+      setEditedReceipt(cloned);
 
       setUploadSuccess(true);
     } catch (err) {
@@ -65,68 +93,319 @@ function CameraUpload() {
     }
   };
 
-  return (
-    <div className="camera-upload-container">
-      <h1 className="page-title">Качи касова бележка</h1>
+  const hasItems =
+    editedReceipt &&
+    Array.isArray(editedReceipt.items) &&
+    editedReceipt.items.length > 0;
 
-      <div className="privacy-banner">
-        Използваме снимката само за да извлечем цените на продуктите. Не
-        съхраняваме лични данни и не споделяме изображението с трети страни.
+  // ====== Edit handlers ======
+
+  const handleMetaChange = (section, field, value) => {
+    setEditedReceipt((prev) => {
+      if (!prev) return prev;
+      const updated = { ...prev };
+
+      if (section === "store") {
+        updated.store = { ...(prev.store || {}) };
+        updated.store[field] = value;
+      } else if (section === "receipt") {
+        updated.receipt = { ...(prev.receipt || {}) };
+        updated.receipt[field] = value;
+      }
+
+      return updated;
+    });
+  };
+
+  const toggleMetaEdit = (fieldKey) => {
+    setEditingMeta((prev) => ({
+      ...prev,
+      [fieldKey]: !prev[fieldKey],
+    }));
+  };
+
+  const handleItemChange = (index, field, value) => {
+    setEditedReceipt((prev) => {
+      if (!prev || !Array.isArray(prev.items)) return prev;
+      const updatedItems = prev.items.map((item, i) =>
+        i === index ? { ...item, [field]: value } : item
+      );
+      return { ...prev, items: updatedItems };
+    });
+  };
+
+  const toggleItemEdit = (index) => {
+    setEditingItemIndex((prevIndex) =>
+      prevIndex === index ? null : index
+    );
+  };
+
+  const handleConfirm = () => {
+    if (!editedReceipt) return;
+
+    console.log("Confirmed receipt data (to send to DB later):", editedReceipt);
+    setConfirmMessage(
+      "Качването е потвърдено (засега само визуално – по-късно ще го запишем в базата данни)."
+    );
+  };
+
+  return (
+    <div className="camera-page">
+      {/* LEFT SIDE – upload + preview */}
+      <div className="camera-upload-container">
+        <h1 className="page-title">Качи касова бележка</h1>
+
+        <div className="privacy-banner">
+          Използваме снимката само за да извлечем цените на продуктите. Не
+          съхраняваме лични данни и не споделяме изображението с трети страни.
+        </div>
+
+        <label className="file-select-label">
+          Избери снимка
+          <input
+            className="file-input"
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            disabled={uploading}
+          />
+        </label>
+
+        {previewUrl && (
+          <div style={{ marginTop: "1rem", width: "100%" }}>
+            <img
+              src={previewUrl}
+              alt="Преглед на касовата бележка"
+              style={{
+                width: "100%",
+                maxHeight: 320,
+                objectFit: "contain",
+                borderRadius: 6,
+              }}
+            />
+          </div>
+        )}
+
+        <button
+          className="upload-button primary-button"
+          onClick={handleUpload}
+          disabled={uploading || !selectedFile}
+        >
+          {uploading ? "Качване..." : "Качи бележката"}
+        </button>
+
+        {uploading && (
+          <div className="loader-wrapper">
+            <div className="loader-circle" />
+            <span>Обработваме бележката...</span>
+          </div>
+        )}
+
+        {uploadSuccess && !uploading && (
+          <div className="success-banner">Успешно качване и разчитане!</div>
+        )}
+
+        {error && (
+          <div
+            style={{
+              marginTop: "1rem",
+              color: "crimson",
+              whiteSpace: "pre-wrap",
+              textAlign: "left",
+              width: "100%",
+            }}
+          >
+            {error}
+          </div>
+        )}
       </div>
 
-      <label className="file-select-label">
-        Избери снимка
-        <input
-          className="file-input"
-          type="file"
-          accept="image/*"
-          onChange={handleFileChange}
-          disabled={uploading}
-        />
-      </label>
+      {/* RIGHT SIDE – parsed & editable result */}
+      <div className="receipt-result-panel">
+        <h2>Резултат от разчитането</h2>
 
-      {previewUrl && (
-        <div style={{ marginTop: "1rem", width: "100%" }}>
-          <img
-            src={previewUrl}
-            alt="Преглед на касовата бележка"
-            style={{
-              width: "100%",
-              maxHeight: 320,
-              objectFit: "contain",
-              borderRadius: 6,
-            }}
-          />
-        </div>
-      )}
+        {!editedReceipt && !uploading && (
+          <p className="placeholder-text">
+            Качи касова бележка, за да видиш извлечените данни тук.
+          </p>
+        )}
 
-      <button
-        className="upload-button"
-        onClick={handleUpload}
-        disabled={uploading || !selectedFile}
-      >
-        {uploading ? "Качване..." : "Качи бележката"}
-      </button>
+        {uploading && (
+          <p className="placeholder-text">
+            Моля, изчакай – извличаме информацията от бележката...
+          </p>
+        )}
 
-      {uploadSuccess && (
-        <div className="success-banner">
-          Success!
-        </div>
-      )}
+        {editedReceipt && (
+          <>
+            {/* META DATA */}
+            <div className="receipt-meta">
+              <div className="meta-row">
+                <strong>Име на магазин:</strong>
+                {editingMeta.storeName ? (
+                  <input
+                    className="meta-input"
+                    type="text"
+                    value={editedReceipt.store?.name ?? ""}
+                    onChange={(e) =>
+                      handleMetaChange("store", "name", e.target.value)
+                    }
+                  />
+                ) : (
+                  <span>{editedReceipt.store?.name ?? "—"}</span>
+                )}
+                <button
+                  type="button"
+                  className={`icon-button ${
+                    editingMeta.storeName ? "icon-button-active" : ""
+                  }`}
+                  onClick={() => toggleMetaEdit("storeName")}
+                  aria-label="Редактирай име на магазина"
+                >
+                  <span className="pen-icon">✏️</span>
+                </button>
+              </div>
 
-      {error && (
-        <div
-          style={{
-            marginTop: "1rem",
-            color: "crimson",
-            whiteSpace: "pre-wrap",
-            textAlign: "left",
-            width: "100%",
-          }}
-        >
-          {error}
-        </div>
-      )}
+              <div className="meta-row">
+                <strong>Локация:</strong>
+                {editingMeta.storeLocation ? (
+                  <input
+                    className="meta-input"
+                    type="text"
+                    value={editedReceipt.store?.location ?? ""}
+                    onChange={(e) =>
+                      handleMetaChange("store", "location", e.target.value)
+                    }
+                  />
+                ) : (
+                  <span>{editedReceipt.store?.location ?? "—"}</span>
+                )}
+                <button
+                  type="button"
+                  className={`icon-button ${
+                    editingMeta.storeLocation ? "icon-button-active" : ""
+                  }`}
+                  onClick={() => toggleMetaEdit("storeLocation")}
+                  aria-label="Редактирай локация"
+                >
+                  <span className="pen-icon">✏️</span>
+                </button>
+              </div>
+
+              <div className="meta-row">
+                <strong>Дата на покупка:</strong>
+                {editingMeta.postDate ? (
+                  <input
+                    className="meta-input"
+                    type="text"
+                    placeholder="YYYY-MM-DD"
+                    value={editedReceipt.receipt?.post_date ?? ""}
+                    onChange={(e) =>
+                      handleMetaChange("receipt", "post_date", e.target.value)
+                    }
+                  />
+                ) : (
+                  <span>{editedReceipt.receipt?.post_date ?? "—"}</span>
+                )}
+                <button
+                  type="button"
+                  className={`icon-button ${
+                    editingMeta.postDate ? "icon-button-active" : ""
+                  }`}
+                  onClick={() => toggleMetaEdit("postDate")}
+                  aria-label="Редактирай дата"
+                >
+                  <span className="pen-icon">✏️</span>
+                </button>
+              </div>
+            </div>
+
+            {/* ITEMS */}
+            <div className="items-section">
+              <h3>Артикули</h3>
+              {hasItems ? (
+                <ul className="items-list">
+                  {editedReceipt.items.map((item, index) => {
+                    const isEditing = editingItemIndex === index;
+                    return (
+                      <li key={index} className="item-row">
+                        {isEditing ? (
+                          <>
+                            <input
+                              className="item-input item-name-input"
+                              type="text"
+                              value={item.name ?? ""}
+                              onChange={(e) =>
+                                handleItemChange(index, "name", e.target.value)
+                              }
+                            />
+                            <input
+                              className="item-input item-price-input"
+                              type="number"
+                              step="0.01"
+                              value={
+                                item.price === null ||
+                                item.price === undefined
+                                  ? ""
+                                  : item.price
+                              }
+                              onChange={(e) =>
+                                handleItemChange(
+                                  index,
+                                  "price",
+                                  e.target.value === ""
+                                    ? null
+                                    : Number(e.target.value)
+                                )
+                              }
+                            />
+                          </>
+                        ) : (
+                          <>
+                            <span className="item-name">{item.name}</span>
+                            <span className="item-price">
+                              {item.price != null
+                                ? item.price.toFixed(2)
+                                : "—"}
+                            </span>
+                          </>
+                        )}
+                        <button
+                          type="button"
+                          className={`icon-button ${
+                            isEditing ? "icon-button-active" : ""
+                          }`}
+                          onClick={() => toggleItemEdit(index)}
+                          aria-label="Редактирай артикул"
+                        >
+                          <span className="pen-icon">✏️</span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <p>Няма разчетени артикули.</p>
+              )}
+            </div>
+
+            {/* CONFIRM BUTTON */}
+            <div className="confirm-area">
+              <button
+                className="confirm-button primary-button"
+                onClick={handleConfirm}
+                disabled={!editedReceipt}
+              >
+                Потвърди качването
+              </button>
+
+              {confirmMessage && (
+                <p className="confirm-message">{confirmMessage}</p>
+              )}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
