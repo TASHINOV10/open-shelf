@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .database.database import Base, engine
-
+from .routes import front_stats
 
 from .models.categories import Categories
 from .models.groceryItems import GroceryItems
@@ -27,6 +27,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(front_stats.router)
 app.include_router(groceryItems.router)
 app.include_router(receipts.router)
 
