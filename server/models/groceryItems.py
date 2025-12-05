@@ -10,11 +10,11 @@ class GroceryItems(Base):
     fk_category_id = Column(
         Integer,
         ForeignKey("categories.pk_id"),
-        nullable=False,
+        nullable=True,
     )
     price = Column(Float, nullable=False)
-    currency = Column(String, nullable=False)
-    post_date = Column(Date, nullable=False)
+    currency = Column(String, nullable=True)
+    post_date = Column(Date, nullable=True)
 
     fk_receipt_id = Column(
         Integer,
