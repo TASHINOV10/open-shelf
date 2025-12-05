@@ -12,6 +12,9 @@ function CameraUpload() {
   const [parsedReceipt, setParsedReceipt] = useState(null);
   const [editedReceipt, setEditedReceipt] = useState(null);
 
+  const [receiptId, setReceiptId] = useState(null);     
+  const [saving, setSaving] = useState(false);          
+
   // Per-field edit state for meta data
   const [editingMeta, setEditingMeta] = useState({
     storeName: false,
@@ -42,6 +45,7 @@ function CameraUpload() {
     });
     setEditingItemIndex(null);
     setConfirmMessage(null);
+    setReceiptId(null); 
   };
 
   const handleUpload = async () => {
@@ -85,6 +89,9 @@ function CameraUpload() {
       setEditedReceipt(cloned);
 
       setUploadSuccess(true);
+
+      setReceiptId(data.receipt_id || null);
+
     } catch (err) {
       console.error(err);
       setError(err.message || "Възникна неочаквана грешка при качването.");
@@ -140,14 +147,52 @@ function CameraUpload() {
     );
   };
 
-  const handleConfirm = () => {
-    if (!editedReceipt) return;
+  const handleConfirm = async () => {
+    if (!editedReceipt || !receiptId) {
+      setConfirmMessage(
+        "Липсва информация за бележката или ID. Моля, качете отново снимката."
+      );
+      return;
+    }
 
-    console.log("Confirmed receipt data (to send to DB later):", editedReceipt);
-    setConfirmMessage(
-      "Качването е потвърдено (засега само визуално – по-късно ще го запишем в базата данни)."
-    );
+    setSaving(true);
+    setConfirmMessage(null);
+
+    try {
+      const response = await fetch(`${API_BASE}/confirm-receipt`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          receipt_id: receiptId,
+          store: editedReceipt.store,
+          receipt: editedReceipt.receipt,
+          items: editedReceipt.items,
+        }),
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(
+          `Грешка при записване на бележката: ${response.status} ${text}`
+        );
+      }
+
+      const data = await response.json();
+      console.log("Saved to DB:", data);
+
+      setConfirmMessage("Качването е потвърдено и записано в базата данни.");
+    } catch (err) {
+      console.error(err);
+      setConfirmMessage(
+        "Възникна грешка при записването в базата. Моля, опитайте отново."
+      );
+    } finally {
+      setSaving(false);
+    }
   };
+
 
   return (
     <div className="camera-page">
@@ -394,9 +439,10 @@ function CameraUpload() {
               <button
                 className="confirm-button primary-button"
                 onClick={handleConfirm}
-                disabled={!editedReceipt}
+                disabled={!editedReceipt || !receiptId || saving}
+
               >
-                Потвърди качването
+                {saving ? "Записваме..." : "Потвърди качването"}
               </button>
 
               {confirmMessage && (
