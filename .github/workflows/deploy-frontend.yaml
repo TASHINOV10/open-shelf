@@ -32,12 +32,12 @@ jobs:
         run: |
           gcloud auth configure-docker europe-central2-docker.pkg.dev --quiet
 
-      # 4) Build frontend image (use client/Dockerfile, repo root as context)
+      # 4) Build frontend image (use client/Dockerfile, client/ as context)
       - name: Build frontend image
         run: |
-            IMAGE="europe-central2-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/open-shelf-repo/open-shelf-frontend:${{ github.sha }}"
-            echo "IMAGE=$IMAGE" >> $GITHUB_ENV
-            docker build -t "$IMAGE" -f client/Dockerfile .
+          IMAGE="europe-central2-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/open-shelf-repo/open-shelf-frontend:${{ github.sha }}"
+          echo "IMAGE=$IMAGE" >> $GITHUB_ENV
+          docker build -t "$IMAGE" -f client/Dockerfile ./client
 
       # 5) Push frontend image
       - name: Push frontend image
@@ -50,5 +50,5 @@ jobs:
           gcloud run deploy open-shelf-frontend \
             --image "$IMAGE" \
             --region "${{ secrets.GCP_REGION }}" \
-            --platform managed \ad
+            --platform managed \
             --allow-unauthenticated
