@@ -1,4 +1,4 @@
-name: Deploy Backend to Cloud Run
+name: Deploy Frontend to Cloud Run
 
 on:
   push:
@@ -50,5 +50,5 @@ jobs:
           gcloud run deploy open-shelf-frontend \
             --image "$IMAGE" \
             --region "${{ secrets.GCP_REGION }}" \
-            --platform managed \
+            --platform managed \ad
             --allow-unauthenticated
