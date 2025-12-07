@@ -15,28 +15,37 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up gcloud with service account key
+      # 1) Authenticate to Google Cloud using the JSON key secret
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      # 2) Install gcloud CLI
+      - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
-          service_account_key: ${{ secrets.GCP_SA_KEY }}
-          export_default_credentials: true
 
+      # 3) Configure Docker to push to Artifact Registry
       - name: Configure Docker for Artifact Registry
         run: |
           gcloud auth configure-docker europe-central2-docker.pkg.dev --quiet
 
+      # 4) Build backend image
       - name: Build backend image
         run: |
           IMAGE="europe-central2-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/open-shelf/backend:${{ github.sha }}"
           echo "IMAGE=$IMAGE" >> $GITHUB_ENV
           docker build -t "$IMAGE" ./server
 
+      # 5) Push backend image
       - name: Push backend image
         run: |
           docker push "$IMAGE"
 
-      - name: Deploy to Cloud Run (backend)
+      # 6) Deploy to Cloud Run (backend)
+      - name: Deploy to Cloud Run
         run: |
           gcloud run deploy open-shelf-backend \
             --image "$IMAGE" \
