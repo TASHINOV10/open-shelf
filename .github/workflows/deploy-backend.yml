@@ -35,9 +35,9 @@ jobs:
       # 4) Build backend image (use server/Dockerfile, repo root as context)
       - name: Build backend image
         run: |
-          IMAGE="europe-central2-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/open-shelf/backend:${{ github.sha }}"
-          echo "IMAGE=$IMAGE" >> $GITHUB_ENV
-          docker build -t "$IMAGE" -f server/Dockerfile .
+            IMAGE="europe-central2-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/open-shelf-repo/open-shelf-server:${{ github.sha }}"
+            echo "IMAGE=$IMAGE" >> $GITHUB_ENV
+            docker build -t "$IMAGE" -f server/Dockerfile .
 
       # 5) Push backend image
       - name: Push backend image
