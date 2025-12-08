@@ -62,10 +62,11 @@ async def upload_receipt(file: UploadFile = File(...)):
     
     except Exception as e:
         import traceback
-        print("UPLOAD ERROR:", e)
         traceback.print_exc()
-        # temporary debug response
-        raise HTTPException(status_code=500, detail=f"Upload error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Internal error while processing receipt."
+        )
 
 @router.post("/confirm-receipt")
 def confirm_receipt(
