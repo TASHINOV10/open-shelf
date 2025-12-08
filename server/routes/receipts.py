@@ -20,45 +20,52 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @router.post("/upload-receipt")
 async def upload_receipt(file: UploadFile = File(...)):
+    try:
 
-    if not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="File must be an image")
+        if not file.content_type.startswith("image/"):
+            raise HTTPException(status_code=400, detail="File must be an image")
 
-    # 0) Generate a unique external receipt ID (UUID)
-    receipt_id = str(uuid.uuid4())
+        # 0) Generate a unique external receipt ID (UUID)
+        receipt_id = str(uuid.uuid4())
 
-    # 1) Determine file extension and build unique filename
-    original_ext = os.path.splitext(file.filename)[1].lower()  # ".jpg", ".jpeg", ".png", ...
-    if original_ext == "":
-        original_ext = ".jpg"  # fallback
+        # 1) Determine file extension and build unique filename
+        original_ext = os.path.splitext(file.filename)[1].lower()  # ".jpg", ".jpeg", ".png", ...
+        if original_ext == "":
+            original_ext = ".jpg"  # fallback
 
-    unique_filename = f"{receipt_id}{original_ext}"
-    file_location = os.path.join(UPLOAD_DIR, unique_filename)
+        unique_filename = f"{receipt_id}{original_ext}"
+        file_location = os.path.join(UPLOAD_DIR, unique_filename)
 
-    # 2) Save file locally
-    with open(file_location, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+        # 2) Save file locally
+        with open(file_location, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
 
-    print(f"[Receipts] Saved file to {file_location}")
+        print(f"[Receipts] Saved file to {file_location}")
 
-    # 3) Send saved file to OpenAI parser
-    parsed = parse_receipt_image(file_location)
+        # 3) Send saved file to OpenAI parser
+        parsed = parse_receipt_image(file_location)
 
-    if parsed is None:
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to parse receipt using OpenAI"
-        )
+        if parsed is None:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to parse receipt using OpenAI"
+            )
 
-    # 4) Return parsed result + IDs to the frontend
-    return {
-        "message": "Upload + parsing complete",
-        "receipt_id": receipt_id,          # <-- IMPORTANT
-        "original_filename": file.filename,
-        "saved_filename": unique_filename,
-        "parsed_receipt": parsed,
-    }
-
+        # 4) Return parsed result + IDs to the frontend
+        return {
+            "message": "Upload + parsing complete",
+            "receipt_id": receipt_id,          # <-- IMPORTANT
+            "original_filename": file.filename,
+            "saved_filename": unique_filename,
+            "parsed_receipt": parsed,
+        }
+    
+    except Exception as e:
+        import traceback
+        print("UPLOAD ERROR:", e)
+        traceback.print_exc()
+        # temporary debug response
+        raise HTTPException(status_code=500, detail=f"Upload error: {e}")
 
 @router.post("/confirm-receipt")
 def confirm_receipt(
@@ -69,9 +76,9 @@ def confirm_receipt(
     Called when the user presses 'Потвърди качването' in the UI.
 
     Persists:
-      - Store (stores table)
-      - Receipt (receipts table, matched by external_id = receipt_id)
-      - Grocery items (grocery_items table)
+    - Store (stores table)
+    - Receipt (receipts table, matched by external_id = receipt_id)
+    - Grocery items (grocery_items table)
     """
 
     # 1) Find or create store by (name, location)
