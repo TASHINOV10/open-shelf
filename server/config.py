@@ -1,6 +1,10 @@
+
 import json
+from typing import Optional, List
+
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -12,12 +16,22 @@ class Settings(BaseSettings):
     debug: bool = True
     environment: str = "local"
     database_url: str = "sqlite:///./dev.db"
+
     openai_api_key: str | None = None
     receipt_local_dir: str = "uploaded_receipts"
     receipt_bucket: str | None = None
     receipt_base_url: str | None = None
 
-    allowed_origins: list[str] = Field(default_factory=list)
+    allowed_origins: List[str] = Field(default_factory=list)
+
+    # --- Cloud SQL (new) ---
+    cloudsql_instance_connection_name: Optional[str] = Field(
+        default=None, env="CLOUDSQL_INSTANCE_CONNECTION_NAME"
+    )
+    db_user: Optional[str] = Field(default=None, env="DB_USER")
+    db_password: Optional[str] = Field(default=None, env="DB_PASSWORD")
+    db_name: Optional[str] = Field(default=None, env="DB_NAME")
+    cloudsql_private_ip: bool = Field(default=False, env="CLOUDSQL_PRIVATE_IP")
 
     @field_validator("allowed_origins", mode="before")
     @classmethod
@@ -35,6 +49,4 @@ class Settings(BaseSettings):
         return v
 
 
-
-# Single global settings object
 settings = Settings()
