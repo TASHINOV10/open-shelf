@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
-import ManualInput from "./ManualInput";
 import CameraUpload from "./CameraUpload";
 import "./App.css";
 import AnimatedCounter from "./AnimatedCounter";
