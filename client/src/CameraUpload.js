@@ -201,20 +201,23 @@ function CameraUpload() {
         <h1 className="page-title">Качи касова бележка</h1>
 
         <div className="privacy-banner">
-          Използваме снимката само за да извлечем цените на продуктите. Не
-          съхраняваме лични данни и не споделяме изображението с трети страни.
+          Снимката се използва за извличане на цените на продуктите. Не се съхраняват лични данни и не се споделят изображенията с трети страни.
         </div>
 
-        <label className="file-select-label">
-          Избери снимка
-          <input
-            className="file-input"
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-            disabled={uploading}
-          />
-        </label>
+        <div className="file-select-row">
+          <label className={`file-select-label${uploading ? " disabled" : ""}`}>
+            <div className="file-select-copy">
+              <span className="file-select-title">Избери файл</span>
+            </div>
+            <input
+              className="file-input"
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              disabled={uploading}
+            />
+          </label>
+        </div>
 
         {previewUrl && (
           <div style={{ marginTop: "1rem", width: "100%" }}>
@@ -247,7 +250,7 @@ function CameraUpload() {
         )}
 
         {uploadSuccess && !uploading && (
-          <div className="success-banner">Успешно качване и разчитане!</div>
+          <div className="success-banner">Моля, потвърдете прочетените данни!</div>
         )}
 
         {error && (
