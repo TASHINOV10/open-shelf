@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { API_BASE } from "../apiConfig";
+import { uploadReceiptImage } from "../api/receipts";
 
 function CameraUpload() {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -59,28 +60,9 @@ function CameraUpload() {
     setConfirmMessage(null);
 
     try {
-      const formData = new FormData();
-      formData.append("file", selectedFile);
+      
+      const data = await uploadReceiptImage(selectedFile);
 
-      const response = await fetch(`${API_BASE}/upload-receipt`, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        let detail = "";
-        try {
-          const data = await response.json();
-          detail = data.detail || JSON.stringify(data);
-        } catch {
-          detail = await response.text();
-        }
-        throw new Error(
-          `Грешка при качване на бележката: ${response.status} ${detail}`
-        );
-      }
-
-      const data = await response.json();
       const parsed = data.parsed_receipt || null;
 
       setParsedReceipt(parsed);

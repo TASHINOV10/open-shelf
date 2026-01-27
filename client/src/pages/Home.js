@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import AnimatedCounter from "../components/AnimatedCounter";
-import { API_BASE } from "../apiConfig";
-
+import { getFrontStats } from "../api/stats";
 
 export default function Home() {
   const [stats, setStats] = useState(null);
@@ -12,24 +11,20 @@ export default function Home() {
   useEffect(() => {
     let isMounted = true;
 
-    fetch(`${API_BASE}/front_stats/stats`)
-      .then((res) => {
-        if (!res.ok) throw new Error(`Failed to load stats: ${res.status}`);
-        return res.json();
-      })
-      .then((data) => {
-        if (isMounted) {
-          setStats(data);
-          setLoadingStats(false);
-        }
-      })
-      .catch((err) => {
-        console.error(err);
-        if (isMounted) {
-          setStatsError("Unable to load stats right now.");
-          setLoadingStats(false);
-        }
-      });
+  getFrontStats()
+    .then((data) => {
+      if (isMounted) {
+        setStats(data);
+        setLoadingStats(false);
+      }
+    })
+    .catch((err) => {
+      console.error(err);
+      if (isMounted) {
+        setStatsError("Unable to load stats right now.");
+        setLoadingStats(false);
+      }
+    });
 
     return () => {
       isMounted = false;
