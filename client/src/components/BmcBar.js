@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from "react";
-import bmcImg from "./bmc.png";
+import { useEffect, useRef } from "react";
+import bmcImg from "../assets/bmc.png";
 
 function BmcBar() {
   const bmcContainerRef = useRef(null);

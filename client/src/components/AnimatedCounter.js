@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 function AnimatedCounter({ value, duration = 1000 }) {
   const [display, setDisplay] = useState(0);

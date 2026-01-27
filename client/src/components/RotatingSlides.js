@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function RotatingSlides({ slides, intervalMs = 5500 }) {
   const [index, setIndex] = useState(0);

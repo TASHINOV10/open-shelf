@@ -1,0 +1,59 @@
+/* ========== ROTATING SLIDES BAR ========== */
+
+.rotator {
+  background: #ffffff;
+  border-bottom: 1px solid var(--border);
+}
+
+.rotator-inner {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 1rem 1.25rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.rotator-window {
+  height: 90px;
+  overflow: hidden;
+  position: relative;
+}
+
+.rotator-track {
+  will-change: transform;
+  transition: transform 600ms ease;
+}
+
+.rotator-slide {
+  height: 180px;
+  display: flex;
+  align-items: flex-start;
+  padding: 0.5rem 0;
+}
+
+.rotator-text {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.45;
+  color: var(--brand);
+  font-weight: 700;
+  max-width: 960px;
+}
+
+.rotator-dots {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.rotator-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(11, 12, 156, 0.18);
+}
+
+.rotator-dot.active {
+  background: rgba(11, 12, 156, 0.65);
+}

@@ -1,6 +1,7 @@
-// src/CameraUpload.js
-import React, { useState } from "react";
-import { API_BASE } from "./apiConfig";
+import { useState } from "react";
+import { API_BASE } from "../apiConfig";
+import { uploadReceiptImage } from "../api/receipts";
+
 
 function CameraUpload() {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -13,7 +14,10 @@ function CameraUpload() {
   const [editedReceipt, setEditedReceipt] = useState(null);
 
   const [receiptId, setReceiptId] = useState(null);     
-  const [saving, setSaving] = useState(false);          
+  const [saving, setSaving] = useState(false);
+  const [showPlusOne, setShowPlusOne] = useState(false);
+  const [uploadLocked, setUploadLocked] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   // Per-field edit state for meta data
   const [editingMeta, setEditingMeta] = useState({
@@ -26,10 +30,14 @@ function CameraUpload() {
   const [editingItemIndex, setEditingItemIndex] = useState(null);
 
   const [confirmMessage, setConfirmMessage] = useState(null);
+  const [confirmStatus, setConfirmStatus] = useState(null); 
 
   const handleFileChange = (event) => {
     const file = event.target.files && event.target.files[0];
     if (!file) return;
+
+    setUploadLocked(false);
+    setSaved(false);
 
     setSelectedFile(file);
     setPreviewUrl(URL.createObjectURL(file));
@@ -54,34 +62,16 @@ function CameraUpload() {
       return;
     }
 
+    setUploadLocked(true);
     setUploading(true);
     setUploadSuccess(false);
     setError(null);
     setConfirmMessage(null);
 
     try {
-      const formData = new FormData();
-      formData.append("file", selectedFile);
+      
+      const data = await uploadReceiptImage(selectedFile);
 
-      const response = await fetch(`${API_BASE}/upload-receipt`, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        let detail = "";
-        try {
-          const data = await response.json();
-          detail = data.detail || JSON.stringify(data);
-        } catch {
-          detail = await response.text();
-        }
-        throw new Error(
-          `Грешка при качване на бележката: ${response.status} ${detail}`
-        );
-      }
-
-      const data = await response.json();
       const parsed = data.parsed_receipt || null;
 
       setParsedReceipt(parsed);
@@ -97,6 +87,7 @@ function CameraUpload() {
       setError(err.message || "Възникна неочаквана грешка при качването.");
     } finally {
       setUploading(false);
+
     }
   };
 
@@ -148,15 +139,34 @@ function CameraUpload() {
   };
 
   const handleConfirm = async () => {
+
     if (!editedReceipt || !receiptId) {
       setConfirmMessage(
-        "Липсва информация за бележката или ID. Моля, качете отново снимката."
+        "Липсва информация за бележката. Моля, качете отново снимката."
       );
+      return;
+    }
+
+    const storeName = editedReceipt.store?.name?.trim();
+    const postDate = editedReceipt.receipt?.post_date?.trim();
+
+    if (!storeName) {
+      setConfirmStatus("error");
+      setConfirmMessage("Моля, попълнете името на магазина!");
+      return;
+    }
+
+    if (!postDate) {
+      setConfirmStatus("error");
+      setConfirmMessage("Моля, попълнете датата на покупката!");
       return;
     }
 
     setSaving(true);
     setConfirmMessage(null);
+
+    setShowPlusOne(true);
+    setTimeout(() => setShowPlusOne(false), 900); 
 
     try {
       const response = await fetch(`${API_BASE}/confirm-receipt`, {
@@ -171,7 +181,7 @@ function CameraUpload() {
           items: editedReceipt.items,
         }),
       });
-
+      
       if (!response.ok) {
         const text = await response.text();
         throw new Error(
@@ -182,9 +192,14 @@ function CameraUpload() {
       const data = await response.json();
       console.log("Saved to DB:", data);
 
+      setSaved(true);
+      
+      setConfirmStatus("success");
       setConfirmMessage("Качването е потвърдено и записано в базата данни.");
     } catch (err) {
       console.error(err);
+
+      setConfirmStatus("error");
       setConfirmMessage(
         "Възникна грешка при записването в базата. Моля, опитайте отново."
       );
@@ -234,12 +249,13 @@ function CameraUpload() {
           </div>
         )}
 
+
         <button
-          className="upload-button primary-button"
+          className={`upload-button primary-button ${uploadLocked ? "btn-locked" : ""}`}
           onClick={handleUpload}
-          disabled={uploading || !selectedFile}
+          disabled={uploading || !selectedFile || uploadLocked}
         >
-          {uploading ? "Качване..." : "Качи бележката"}
+          {uploading ? "Качване..." : uploadLocked ? "Качи бележката" : "Качи бележката"}
         </button>
 
         {uploading && (
@@ -342,11 +358,13 @@ function CameraUpload() {
 
               <div className="meta-row">
                 <strong>Дата на покупка:</strong>
+
+
                 {editingMeta.postDate ? (
                   <input
                     className="meta-input"
-                    type="text"
-                    placeholder="YYYY-MM-DD"
+                    type="date"
+                    max={new Date().toISOString().slice(0, 10)}
                     value={editedReceipt.receipt?.post_date ?? ""}
                     onChange={(e) =>
                       handleMetaChange("receipt", "post_date", e.target.value)
@@ -355,6 +373,7 @@ function CameraUpload() {
                 ) : (
                   <span>{editedReceipt.receipt?.post_date ?? "—"}</span>
                 )}
+
                 <button
                   type="button"
                   className={`icon-button ${
@@ -439,18 +458,33 @@ function CameraUpload() {
 
             {/* CONFIRM BUTTON */}
             <div className="confirm-area">
-              <button
-                className="confirm-button primary-button"
-                onClick={handleConfirm}
-                disabled={!editedReceipt || !receiptId || saving}
 
-              >
-                {saving ? "Записваме..." : "Потвърди качването"}
-              </button>
+              <div className="confirm-btn-wrap">
+                <button
+                  className={`confirm-button primary-button ${saving ? "btn-pulse" : ""}`}
+                  onClick={handleConfirm}
+                  disabled={
+                    saving ||
+                    saved ||
+                    !editedReceipt ||
+                    !receiptId
+                  }
+                >
+                  {saving
+                    ? "Записване..."
+                    : saved
+                    ? "Готово!"
+                    : "Потвърди качването"}
+                </button>
 
-              {confirmMessage && (
-                <p className="confirm-message">{confirmMessage}</p>
-              )}
+                {showPlusOne && <span className="plus-one">+1</span>}
+
+              </div>
+                {confirmMessage && (
+                  <div className={`banner ${confirmStatus}`}>
+                  {confirmMessage}
+                  </div>
+                )}
             </div>
           </>
         )}
