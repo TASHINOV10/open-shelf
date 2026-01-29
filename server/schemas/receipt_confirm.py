@@ -1,8 +1,17 @@
-# server/schemas/receipt_confirm.py
-
 from datetime import date
 from typing import List, Optional
 from pydantic import BaseModel
+from datetime import date
+
+
+EUR_SWITCH_DATE = date(2026, 1, 1)
+
+def infer_currency(purchase_date: date | None ) -> str:
+
+    if purchase_date and purchase_date < EUR_SWITCH_DATE:
+        return "BGN"
+    
+    return "EUR"
 
 
 class StoreIn(BaseModel):
@@ -18,7 +27,7 @@ class ReceiptMetaIn(BaseModel):
 class ItemIn(BaseModel):
     name: str
     price: Optional[float] = None
-    currency: Optional[str] = "BGN"
+    currency: Optional[str] = None
 
 
 class ConfirmReceiptIn(BaseModel):

@@ -7,10 +7,11 @@ from sqlalchemy.orm import Session
 
 from server.services.openai_receipt_parser import parse_receipt_image
 from server.database.database import get_db
-from server.schemas.receipt_confirm import ConfirmReceiptIn
+from server.schemas.receipt_confirm import ConfirmReceiptIn , infer_currency
 from server.models.stores import Stores
 from server.models.receipts import Receipts
 from server.models.groceryItems import GroceryItems  # adjust filename if needed
+
 
 router = APIRouter()
 
@@ -19,6 +20,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
 @router.post("/upload-receipt")
+
 async def upload_receipt(file: UploadFile = File(...)):
     try:
 
@@ -126,10 +128,13 @@ def confirm_receipt(
         if not item.name:
             continue  # skip empty names
 
+        purchase_date = payload.receipt.post_date
+        currency = infer_currency(purchase_date)
+
         db_item = GroceryItems(
             name=item.name,
             price=item.price if item.price is not None else 0.0,
-            currency=item.currency,
+            currency=currency,
             post_date=payload.receipt.post_date,
             fk_receipt_id=receipt.pk_id,
             fk_store_id=store.pk_id,
