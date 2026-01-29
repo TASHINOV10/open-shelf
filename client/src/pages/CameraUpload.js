@@ -255,7 +255,7 @@ function CameraUpload() {
           onClick={handleUpload}
           disabled={uploading || !selectedFile || uploadLocked}
         >
-          {uploading ? "Качване..." : uploadLocked ? "Качи бележката" : "Качи бележката"}
+          {uploading ? "Качи бележката" : uploadLocked ? "Качи бележката" : "Качи бележката"}
         </button>
 
         {uploading && (
@@ -471,9 +471,9 @@ function CameraUpload() {
                   }
                 >
                   {saving
-                    ? "Записване..."
+                    ? "Потвърди качването"
                     : saved
-                    ? "Готово!"
+                    ? "Потвърди качването"
                     : "Потвърди качването"}
                 </button>
 
