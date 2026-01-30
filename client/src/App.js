@@ -9,22 +9,19 @@ import "./styles/responsive.css";
 
 import Home from "./pages/Home";
 import CameraUpload from "./pages/CameraUpload";
-import Navbar from "./components/Navbar";
-import BmcBar from "./components/BmcBar";
-import RotatingSlides from "./components/RotatingSlides";
-import { homeSlides } from "./components/Slides";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import Layout from "./components/Layout";
 
 function App() {
   return (
     <Router>
-      <Navbar />
-      <BmcBar />
-      <RotatingSlides slides={homeSlides} intervalMs={5500} />
-
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/camera" element={<CameraUpload />} />
-      </Routes>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/camera" element={<CameraUpload />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+        </Routes>
+      </Layout>
     </Router>
   );
 }

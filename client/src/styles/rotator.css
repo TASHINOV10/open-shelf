@@ -6,9 +6,7 @@
 }
 
 .rotator-inner {
-  max-width: 920px;
-  margin: 0 auto;
-  padding: 1rem 1.25rem 1rem;
+  padding: 1rem 0;
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
@@ -38,7 +36,6 @@
   line-height: 1.45;
   color: var(--brand);
   font-weight: 700;
-  max-width: 960px;
 }
 
 .rotator-dots {

@@ -38,10 +38,10 @@ function BmcBar() {
         target="_blank"
         rel="noreferrer"
       >
-        <div className="navbar-bmc-inner">
+        <div className="container navbar-bmc-inner">
           <span className="bmc-text">
             <img src={bmcImg} alt="Coffee" className="bmc-icon" />
-            <i>подкрепи проекта с едно кафе </i>
+            <i>подкрепи проекта с едно кафе</i>
           </span>
           <div className="bmc-wrap" ref={bmcContainerRef}>
             <span className="bmc-fallback">подкрепи проекта ☕</span>

@@ -32,19 +32,17 @@
 
   .camera-page {
     flex-direction: column;
-    padding: 16px;
     gap: 16px;
   }
 
   .camera-upload-container,
   .receipt-result-panel {
     max-width: 100%;
-    margin: 0 auto 16px auto;
+    margin: 0;
   }
 
   .rotator-inner {
-    max-width: 100%;
-    padding: 0.9rem 1rem;
+    padding: 0.9rem 0;
   }
 
   .rotator-window,

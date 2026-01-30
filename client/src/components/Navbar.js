@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 function Navbar() {
   return (
     <header className="navbar">
-      <div className="navbar-inner">
+      <div className="container navbar-inner">
         <Link to="/" className="logo-link" aria-label="Open Shelf начало">
           <span className="logo-wordmark">
             <span className="logo-word logo-word-top">Open</span>

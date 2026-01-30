@@ -11,10 +11,8 @@
   display: flex;
   align-items: center;
   gap: 0.9rem;
-  max-width: 1000px;
-  margin: 0 auto;
   width: 100%;
-  padding: 0.75rem 1.1rem;
+  padding: 0.75rem 0;
 }
 
 .logo-link {
@@ -164,9 +162,7 @@
 }
 
 .navbar-bmc-inner {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 0.55rem 1.5rem;
+  padding: 0.55rem 0;
   display: flex;
   align-items: center;
   justify-content: center;

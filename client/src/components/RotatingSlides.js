@@ -19,7 +19,7 @@ export default function RotatingSlides({ slides, intervalMs = 5500 }) {
 
   return (
     <div className="rotator">
-      <div className="rotator-inner">
+      <div className="container rotator-inner">
         <div className="rotator-window">
           <div
             className="rotator-track"
