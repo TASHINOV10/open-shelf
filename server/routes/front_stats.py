@@ -19,18 +19,15 @@ class DashboardStats(BaseModel):
 
 
 @router.get("/stats", response_model=DashboardStats)
-def get_stats(db: Session = Depends(get_db)):
-    total_receipts, total_stores, total_items, total_locations = db.query(
-        func.count(func.distinct(Receipts.pk_id)),
-        func.count(func.distinct(Stores.name)),
-        func.count(func.distinct(GroceryItems.name)),
-        func.count(func.distinct(Stores.location)),
-    ).one()
 
-    total_receipts = total_receipts or 0
-    total_stores = total_stores or 0
-    total_items = total_items or 0
-    total_locations = total_locations or 0
+def get_stats(db: Session = Depends(get_db)):
+    
+    total_receipts = db.query(func.count(Receipts.pk_id)).scalar() or 0
+
+    total_stores = db.query(func.count(func.distinct(Stores.name))).scalar() or 0
+    total_locations = db.query(func.count(func.distinct(Stores.location))).scalar() or 0
+
+    total_items = db.query(func.count(func.distinct(GroceryItems.name))).scalar() or 0
 
     return DashboardStats(
         total_receipts=total_receipts,
