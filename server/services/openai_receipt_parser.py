@@ -1,7 +1,7 @@
 import base64
 import json
 import os
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
 
 from openai import OpenAI
 from server.config import settings
@@ -12,35 +12,90 @@ def encode_image(path: str) -> str:
         return base64.b64encode(f.read()).decode("utf-8")
 
 
-SYSTEM_PROMPT = """
-You are a strict receipt parser.
+ALLOWED_STORES_BG = [
+    "Кам Маркет",
+    "Билла",
+    "ЦБА",
+    "Фантастико",
+    "БулМаг",
+    "Хит Макс",
+    "Кауфланд",
+    "Лидл",
+    "Метро",
+    "ПроМаркет",
+    "Т Маркет",
+    "Триумф",
+    "Карфур",
+    "Бурлекс",
+    "345 Магазинъ",
+    "Дар",
+    "Мандарин",
+    "Смокиня",
+    "Бакалия",
+    "АБЦ Маркет",
+    "Мини Март",
+]
 
-Look at the image of a shopping receipt and extract ONLY the following information,
-formatted as a single JSON object with this exact structure:
 
-{
-  "store": {
+def build_system_prompt(allowed_stores: List[str]) -> str:
+    # Embed canonical store list in Cyrillic
+    stores = ", ".join([f'"{s}"' for s in allowed_stores])
+
+    return f"""
+You are a strict receipt parser for Bulgarian grocery receipts.
+
+You MUST output ONLY a single valid JSON object with this exact structure:
+
+{{
+  "code": 0 | 6969,
+  "store": {{
     "name": string | null,
     "location": string | null
-  },
-  "receipt": {
-    "post_date": string | null         // date of purchase in YYYY-MM-DD format
-  },
+  }},
+  "receipt": {{
+    "post_date": string | null
+  }},
   "items": [
-    {
-      "name": string,                  // product name as printed (or best guess)
-      "price": number | null           // line total price for that item
-    }
+    {{
+      "name": string,
+      "price": number | null
+    }}
   ]
-}
+}}
 
-Rules:
-- Use null when a value is missing or unclear.
-- For post_date, try to parse the date printed on the receipt into YYYY-MM-DD.
-- Do NOT include any extra fields.
-- Do NOT include comments or explanations.
-- Return ONLY valid JSON.
-"""
+CANONICAL_ALLOWED_STORES (Cyrillic only):
+[{stores}]
+
+CRITICAL RULES (STRICT ENFORCEMENT):
+1) If the image is NOT a Bulgarian grocery receipt OR you cannot confidently identify the store from the allowed list,
+   output code=6969 and set:
+   - store.name = null
+   - store.location = null
+   - receipt.post_date = null
+   - items = []
+
+2) If the receipt store IS in the allowed list:
+   - code MUST be 0
+   - store.name MUST be EXACTLY one of CANONICAL_ALLOWED_STORES (exact spelling).
+   - The receipt may show legal entity forms like "ООД", "ЕООД", "АД", "ЕТ" etc.
+     Example: "Триумф ООД" -> output store.name = "Триумф" (canonical).
+   - If the store name in the receipt is in Latin letters (e.g., "Lidl") but corresponds to a canonical Cyrillic store
+     in the list, output the canonical Cyrillic one (e.g., "Лидл").
+
+3) store.location must be the PHYSICAL STORE LOCATION address (конкретния обект/магазин where purchase occurred),
+   NOT the firm registered address near EIK/BULSTAT.
+   If store.location cannot be confidently found, use null.
+
+4) receipt.post_date must be the purchase date in YYYY-MM-DD format, else null.
+
+5) Use null when missing/unclear (except items: if code=6969 then items must be []).
+6) Do NOT include extra fields. Do NOT include markdown. Return ONLY JSON.
+
+7) Do NOT include comments or explanations.
+8) Return ONLY valid JSON.
+
+
+""".strip()
 
 
 def parse_receipt_image(path: str) -> Optional[Dict[str, Any]]:
@@ -55,14 +110,14 @@ def parse_receipt_image(path: str) -> Optional[Dict[str, Any]]:
     base64_img = encode_image(path)
     client = OpenAI(api_key=settings.openai_api_key)
 
+    system_prompt = build_system_prompt(ALLOWED_STORES_BG)
+
     response = client.responses.create(
         model="gpt-4.1-mini",
         input=[
             {
                 "role": "system",
-                "content": [
-                    {"type": "input_text", "text": SYSTEM_PROMPT},
-                ],
+                "content": [{"type": "input_text", "text": system_prompt}],
             },
             {
                 "role": "user",
@@ -74,7 +129,8 @@ def parse_receipt_image(path: str) -> Optional[Dict[str, Any]]:
                 ],
             },
         ],
-        max_output_tokens=800,
+        temperature=0,
+        max_output_tokens=900,
     )
 
     try:
@@ -98,7 +154,6 @@ def parse_receipt_image(path: str) -> Optional[Dict[str, Any]]:
         cleaned = cleaned[len("```json"):].lstrip()
     elif cleaned.startswith("```"):
         cleaned = cleaned[len("```"):].lstrip()
-
     if cleaned.endswith("```"):
         cleaned = cleaned[:-3].rstrip()
 

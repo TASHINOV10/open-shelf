@@ -18,6 +18,8 @@ function CameraUpload() {
   const [showPlusOne, setShowPlusOne] = useState(false);
   const [uploadLocked, setUploadLocked] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [needsReview, setNeedsReview] = useState(false);
+
 
   // Per-field edit state for meta data
   const [editingMeta, setEditingMeta] = useState({
@@ -36,8 +38,11 @@ function CameraUpload() {
     const file = event.target.files && event.target.files[0];
     if (!file) return;
 
+    
     setUploadLocked(false);
     setSaved(false);
+
+    setNeedsReview(false);
 
     setSelectedFile(file);
     setPreviewUrl(URL.createObjectURL(file));
@@ -62,6 +67,8 @@ function CameraUpload() {
       return;
     }
 
+
+
     setUploadLocked(true);
     setUploading(true);
     setUploadSuccess(false);
@@ -73,6 +80,13 @@ function CameraUpload() {
       const data = await uploadReceiptImage(selectedFile);
 
       const parsed = data.parsed_receipt || null;
+
+      setNeedsReview(Boolean(data.needs_review) || parsed?.code === 6969);
+
+      if (Boolean(data.needs_review) || parsed?.code === 6969) {
+        setConfirmStatus("warning");
+      }
+
 
       setParsedReceipt(parsed);
       const cloned = parsed ? JSON.parse(JSON.stringify(parsed)) : null;
@@ -139,6 +153,13 @@ function CameraUpload() {
   };
 
   const handleConfirm = async () => {
+
+  if (needsReview) {
+    setConfirmStatus("error");
+    setConfirmMessage("Бележката е маркирана за ръчен преглед и не може да бъде потвърдена.");
+    return;
+    }
+
 
     if (!editedReceipt || !receiptId) {
       setConfirmMessage(
@@ -266,8 +287,19 @@ function CameraUpload() {
         )}
 
         {uploadSuccess && !uploading && (
-          <div className="success-banner">Моля, потвърдете прочетените данни!</div>
+          <div className={`banner ${needsReview ? "warning" : "success"}`}>
+            {needsReview ? (
+              <>
+                Качената снимка съдържа нов магазин или не е касова бележка на хранителен магазин.
+                Бележката ще бъде прегледана вътрешно преди окончателното качване.
+                Благодарим за приноса!
+              </>
+            ) : (
+              <>Моля, потвърдете прочетените данни!</>
+            )}
+          </div>
         )}
+
 
         {error && (
           <div
@@ -300,7 +332,7 @@ function CameraUpload() {
           </p>
         )}
 
-        {editedReceipt && (
+        {editedReceipt && !needsReview && (
           <>
             {/* META DATA */}
             <div className="receipt-meta">

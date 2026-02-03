@@ -11,6 +11,8 @@ from server.schemas.receipt_confirm import ConfirmReceiptIn , infer_currency
 from server.models.stores import Stores
 from server.models.receipts import Receipts
 from server.models.groceryItems import GroceryItems  # adjust filename if needed
+from server.schemas.openai_parsed_receipt import OpenAIParsedReceipt
+from server.services.gcs_storage import upload_to_pending
 
 
 router = APIRouter()
@@ -41,34 +43,58 @@ async def upload_receipt(file: UploadFile = File(...)):
         # 2) Save file locally
         with open(file_location, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
+            print(f"[Receipts] Saved file to {file_location}")
 
+            
         print(f"[Receipts] Saved file to {file_location}")
 
         # 3) Send saved file to OpenAI parser
-        parsed = parse_receipt_image(file_location)
+        parsed_raw = parse_receipt_image(file_location)
 
-        if parsed is None:
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to parse receipt using OpenAI"
+        if parsed_raw is None:
+            raise HTTPException(status_code=500, detail="Failed to parse receipt using OpenAI")
+        try:
+            parsed = OpenAIParsedReceipt.model_validate(parsed_raw)
+        except Exception:
+            raise HTTPException(status_code=500, detail="OpenAI returned invalid receipt JSON format")
+
+        if parsed.code == 6969:
+            with open(file_location, "rb") as f:
+                image_bytes = f.read()
+
+            gcs_uri = upload_to_pending(
+                filename=unique_filename,
+                data=image_bytes,
+                content_type=file.content_type or "image/jpeg",
             )
+            return {
+                "message": "Receipt requires manual review",
+                "receipt_id": receipt_id,
+                "original_filename": file.filename,
+                "saved_filename": unique_filename,
+                "parsed_receipt": parsed.model_dump(),
+                "needs_review": True,
+            }
 
-        # 4) Return parsed result + IDs to the frontend
         return {
             "message": "Upload + parsing complete",
-            "receipt_id": receipt_id,          # <-- IMPORTANT
+            "receipt_id": receipt_id,         
             "original_filename": file.filename,
             "saved_filename": unique_filename,
-            "parsed_receipt": parsed,
+            "parsed_receipt": parsed.model_dump(),
+            "needs_review": False
         }
     
-    except Exception as e:
+    except HTTPException:
+        raise
+    except Exception:
         import traceback
         traceback.print_exc()
         raise HTTPException(
             status_code=500,
             detail="Internal error while processing receipt."
         )
+
 
 @router.post("/confirm-receipt")
 def confirm_receipt(
@@ -84,6 +110,12 @@ def confirm_receipt(
     - Grocery items (grocery_items table)
     """
 
+    if payload.code == 6969:
+        raise HTTPException(
+            status_code=409,
+            detail="Receipt is marked for manual review and cannot be confirmed yet."
+        )
+    
     # 1) Find or create store by (name, location)
     store = (
         db.query(Stores)

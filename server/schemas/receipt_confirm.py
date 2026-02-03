@@ -1,16 +1,14 @@
 from datetime import date
-from typing import List, Optional
-from pydantic import BaseModel
-from datetime import date
+from typing import List, Optional, Literal
 
+from pydantic import BaseModel
 
 EUR_SWITCH_DATE = date(2026, 1, 1)
 
-def infer_currency(purchase_date: date | None ) -> str:
 
+def infer_currency(purchase_date: date | None) -> str:
     if purchase_date and purchase_date < EUR_SWITCH_DATE:
         return "BGN"
-    
     return "EUR"
 
 
@@ -33,6 +31,9 @@ class ItemIn(BaseModel):
 class ConfirmReceiptIn(BaseModel):
     # This is the UUID we returned from /upload-receipt
     receipt_id: str
+
+    # NEW: pass-through parser code
+    code: Literal[0, 6969] = 0
 
     store: StoreIn
     receipt: ReceiptMetaIn

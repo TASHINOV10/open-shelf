@@ -8,6 +8,7 @@ __pycache__/
 *.sqlite3
 .env
 
+
 # === FastAPI specific ===
 instance/
 *.log
@@ -25,7 +26,8 @@ yarn-error.log*
 
 # === OS Files ===
 .DS_Store
-Thumbs.db
+Thumbs.
+start_proxy.bat
 
 # === IDEs ===
 .vscode/

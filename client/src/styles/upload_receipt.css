@@ -402,6 +402,14 @@
   border: 1px solid #c3e6cb;
 }
 
+/* Warning */
+.banner.warning {
+  background-color: #fff8e1;
+  color: #7d5200;
+  border: 1px solid #ffecb3;
+}
+
+
 /* Error */
 .banner.error {
   background-color: #fde2e2;
